@@ -152,6 +152,10 @@ typedef struct _core_program_rom_t{
 
 
 
+// iNES: Header
+
+
+
 // Initialize the cpu struct
 extern core_cpu_t core_cpu6502_cpu_init();
 

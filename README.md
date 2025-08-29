@@ -2,6 +2,23 @@
 A Nintendo ES emulator, in the end it's slop code, but I just had to do it for the culture.
 
 
+# Requirements
+- Obviously the C compiler, Clang preferrably
+- For now I can only guarantee UNIX-like OS (macOS 👉👈)
+
+# To build
+- Run this on the terminal
+```sh
+sh build.sh
+```
+
+# To run
+- Run the build (not doing anything yet 😔)
+```sh
+sh build/nes_emu
+```
+
+
 
 # Resource
 - Project structure - Eskil Steenberg's video, [How I program C](https://www.youtube.com/watch?v=443UNeGrFoM&t=2262s)
@@ -9,4 +26,6 @@ A Nintendo ES emulator, in the end it's slop code, but I just had to do it for t
 - Reference manual - [NES DEV](https://www.nesdev.org/)
 
 
+> [!Note]
 > Plih I nih a j*b (in C/C++) 😭
+> Still in progress...
