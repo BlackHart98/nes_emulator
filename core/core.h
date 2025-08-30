@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "../utils/utils.h"
 
 
 //@ Module: cpu6502 layout
@@ -119,8 +120,8 @@ typedef struct _core_ppu_register_t{
 
 // NES: Cartridge
 typedef struct _core_cartridge_t{
-    uint8_t * program_memory;
-    uint8_t * character_memory;
+    utils_dyn_array_t program_memory;
+    utils_dyn_array_t character_memory;
 } core_cartridge_t;
 
 // NES: Name table
@@ -175,7 +176,7 @@ extern core_ppu_register_t core_ppu2C02_register_init(core_main_bus_t *);
 extern core_ppu_bus_t core_ppu_bus_init();
 
 // Initialize the cartridge struct
-extern core_cartridge_t core_cartridge_init(core_cartridge_t *, char *);
+extern core_cartridge_t core_cartridge_init(char *);
 
 // Initialize the name table struct
 extern core_name_table_t core_name_table_init(core_ppu_bus_t *);
@@ -189,6 +190,10 @@ extern core_ppu_t core_ppu2C02_init();
 
 // Initialize the name table struct
 extern core_ppu_t core_ppu2C02_init();
+
+
+// Deinitialize the cartridge struct
+extern void core_cartridge_deinit(core_cartridge_t *);
 
 
 // CPU functions

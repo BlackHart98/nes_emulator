@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "core/core.h"
+#include "utils/utils.h"
 
 int main(int argc, char * argv[]){
     core_main_bus_t my_bus = core_bus_init();
@@ -11,8 +12,7 @@ int main(int argc, char * argv[]){
     core_name_table_t my_name_table = core_name_table_init(&my_ppu_bus);
     core_pattern_t my_pattern_table = core_pattern_init(&my_ppu_bus);
     core_ppu_t my_ppu = core_ppu2C02_init();
-    // core_cartridge_init();
-    // core_cartridge_t some_cartridge = core_cartridge_init(&my_bus);
+    core_cartridge_t some_cartridge = core_cartridge_init("foobar.iso");
 
     printf("Hello world there, this is the data in the address 0x0 = #%i.\n", my_bus.address_line[0]);
 
@@ -25,6 +25,17 @@ int main(int argc, char * argv[]){
     printf("Here is the address of the ppu register, #%d\n", my_ppu_register.ppu_register[0x0002]);
 
     // core_nes_emulate(NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
+    // core_cartridge_t my_array_list = utils_dyn_array_init(KB(1));
+
+    utils_dyn_array_set_index(&some_cartridge.character_memory, 0, 4);
+
+    printf("Here is the value at index = #%d.\n", utils_dyn_array_get_index(&some_cartridge.character_memory, 0));
+
+    core_cartridge_deinit(&some_cartridge);
+
+    printf("Here is the value at index = #%d.\n", utils_dyn_array_get_index(&some_cartridge.character_memory, 0));
+
     return 0;
 }
 
