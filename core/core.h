@@ -120,8 +120,11 @@ typedef struct _core_ppu_register_t{
 
 // NES: Cartridge
 typedef struct _core_cartridge_t{
-    utils_dyn_array_t program_memory;
-    utils_dyn_array_t character_memory;
+    uint8_t             n_mapper_id;
+    uint8_t             n_prgbanks_id;
+    uint8_t             n_chrbanks_id;
+    utils_dyn_array_t   program_memory;
+    utils_dyn_array_t   character_memory;
 } core_cartridge_t;
 
 // NES: Name table

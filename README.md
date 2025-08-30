@@ -11,11 +11,20 @@ A Nintendo ES emulator, in the end it's slop code, but I just had to do it for t
 ```sh
 sh build.sh
 ```
+*For release*
+```sh
+sh build-release.sh
+```
+
 
 # To run
 - Run the build (not doing anything yet 😔)
 ```sh
-sh build/nes_emu
+sh build/nes_emu <game_file_path>
+```
+*For release*
+```sh
+sh build/nes_emu_release <game_file_path>
 ```
 
 

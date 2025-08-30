@@ -29,10 +29,13 @@ core_cartridge_t core_cartridge_init(const char * file_name){
 
     fread((char *)&header, sizeof(header), sizeof(header), fhandle);
 
-    
+
 
     fclose(fhandle);
     return (core_cartridge_t){
+        .n_chrbanks_id = 0,
+        .n_mapper_id = 0,
+        .n_prgbanks_id = 0,
         .character_memory = utils_dyn_array_init(KB(8)),
         .program_memory = utils_dyn_array_init(KB(8)),
     };

@@ -8,6 +8,7 @@
 
 utils_dyn_array_t utils_dyn_array_init(size_t init_size){
     uint8_t * buffer = (uint8_t *) malloc(init_size);
+    memset(buffer, 0, init_size);
     // if (buffer == NULL)
     return (utils_dyn_array_t){
         .buffer = buffer,

@@ -16,7 +16,7 @@ int main(int argc, char * argv[]){
     core_ppu_register_t my_ppu_register = core_ppu2C02_register_init(&my_bus); // Same applies to this
     core_ppu_bus_t my_ppu_bus = core_ppu_bus_init();
     core_name_table_t my_name_table = core_name_table_init(&my_ppu_bus);
-    core_pattern_t my_pattern_table = core_pattern_init(&my_ppu_bus);
+    core_pattern_t my_pattern = core_pattern_init(&my_ppu_bus);
     core_ppu_t my_ppu = core_ppu2C02_init();
     core_cartridge_t some_cartridge = core_cartridge_init(game_file_name);
 
@@ -38,7 +38,7 @@ int main(int argc, char * argv[]){
 
     core_cartridge_deinit(&some_cartridge);
 
-    // This should segfault, but I abort it before it segfaults
+    // This should segfault, but I abort it before it does
     // printf("Here is the value at index = #%d.\n", utils_dyn_array_get_index(&some_cartridge.character_memory, 0));
 
     return 0;
