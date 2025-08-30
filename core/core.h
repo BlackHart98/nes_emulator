@@ -245,4 +245,4 @@ extern int core_nes_emulate(
     , core_cartridge_t *        cartridge
 );
 
-#endif
+#endif /* _CORE_H */

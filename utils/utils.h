@@ -28,4 +28,4 @@ extern void utils_dyn_array_destroy(utils_dyn_array_t * dyn_array);
 
 
 
-#endif /* _UTILS.H */
+#endif /* _UTILS_H */

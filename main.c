@@ -34,6 +34,7 @@ int main(int argc, char * argv[]){
 
     core_cartridge_deinit(&some_cartridge);
 
+    // This should segfault, but I abort it before it segfaults
     printf("Here is the value at index = #%d.\n", utils_dyn_array_get_index(&some_cartridge.character_memory, 0));
 
     return 0;
