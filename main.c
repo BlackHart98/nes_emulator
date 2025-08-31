@@ -19,6 +19,7 @@ int main(int argc, char * argv[]){
     core_pattern_t my_pattern = core_pattern_init(&my_ppu_bus);
     core_ppu_t my_ppu = core_ppu2C02_init();
     core_cartridge_t some_cartridge = core_cartridge_init(game_file_name);
+    core_program_rom_t my_prgrom = core_program_rom_init(&my_bus);
 
     printf("Hello world there, this is the data in the address 0x0 = #%i.\n", my_bus.address_line[0]);
 
@@ -35,6 +36,10 @@ int main(int argc, char * argv[]){
     utils_dyn_array_set_index(&some_cartridge.character_memory, 0, 4);
 
     printf("Here is the value at index = #%d.\n", utils_dyn_array_get_index(&some_cartridge.character_memory, 0));
+
+    core_cartridge_map_prgrom_chunk(&some_cartridge, &my_prgrom);
+
+    printf("here is the content of the on the my_prgrom.program_memory[0] = #%x\n", my_prgrom.program_memory[0]);
 
     core_cartridge_deinit(&some_cartridge);
 

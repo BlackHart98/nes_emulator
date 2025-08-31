@@ -116,10 +116,19 @@ core_ram_t core_ram_init(core_main_bus_t * bus){
     };
 }
 
+core_program_rom_t core_program_rom_init(core_main_bus_t * bus){
+    uint8_t * ptr = (uint8_t *)((uintptr_t)bus->address_line + 0x8000);
+    return (core_program_rom_t){
+        .program_memory = ptr,
+        .capacity = KB(16),
+    };
+}
+
 
 uint8_t core_cpu6502_read(core_main_bus_t * bus, const uint16_t address){
     printf("CPU is reading from...\n");
     if (address >= 0x8000 && address <= 0xFFFF){
+        // cartridge read
         return bus->address_line[address];
     }
     return 0x00;
@@ -133,18 +142,20 @@ uint8_t core_cpu6502_read_only(const core_main_bus_t * bus, const uint16_t addre
     } else if (address >= 0x2000 && address <= 0x3FFF){
         return bus->address_line[0x2000 + (address & 0x0007)];
     } else if (address >= 0x8000 && address <= 0xFFFF){
+        // cartridge read only
         return bus->address_line[address];
     }
     return 0x00;
 }
 
 void core_cpu6502_write(core_main_bus_t * bus, const uint16_t address, const uint8_t data){
-    printf("Writing data #%x, into address $%x\n", data, address);
+    printf("Writing data #%d, into address $%d\n", data, address);
     if (address >= 0x0000 && address <= (KB(8) - 1)){
         bus->address_line[address & (KB(2) - 1)] = data;
     } else if (address >= 0x2000 && address <= 0x3FFF){
         bus->address_line[0x2000 + (address & 0x0007)] = data;
     } else if (address >= 0x8000 && address <= 0xFFFF){
+        // cartridge write
         bus->address_line[address] = data;
     }
 }

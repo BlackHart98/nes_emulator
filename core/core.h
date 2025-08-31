@@ -195,6 +195,9 @@ extern core_ppu_t core_ppu2C02_init();
 // Initialize the name table struct
 extern core_ppu_t core_ppu2C02_init();
 
+// Initialize the program rom struct
+core_program_rom_t core_program_rom_init(core_main_bus_t *);
+
 
 // Deinitialize the cartridge struct
 extern void core_cartridge_deinit(core_cartridge_t *);
@@ -225,16 +228,18 @@ extern void core_ppu2C02_write_to_ppu_bus(core_ppu_bus_t *, const uint16_t, cons
 extern void core_ppu2C02_clock(core_ppu_t *);
 
 
-// Mapper functions
-extern void core_map_cartridge_to_addressable_prgrom(core_cartridge_t *, core_program_rom_t *);
-extern void core_map_cartridge_to_addressable_chrrom(core_cartridge_t *, core_palettes_t *);
-
-
 // Cartridge functions
-extern uint8_t core_prgrom_read_from_main_bus(core_program_rom_t *, const uint16_t);
-extern void core_prgrom_write_to_main_bus(core_program_rom_t *, const uint16_t, const uint8_t);
-extern uint8_t core_pattern_read_from_ppu_bus(core_pattern_t *, const uint16_t);
-extern void core_pattern_write_to_ppu_bus(core_pattern_t *, const uint16_t, const uint8_t);
+extern void core_cartridge_map_prgrom_chunk(core_cartridge_t *, core_program_rom_t *);
+extern void core_cartridge_map_chrrom_chunk(core_cartridge_t *, core_pattern_t *);
+// Not quite sure about these functions
+extern void core_cartridge_relay_prgrom_chunk(core_cartridge_t *, core_program_rom_t *);
+extern void core_cartridge_relay_chrrom_chunk(core_cartridge_t *, core_pattern_t *);
+
+// CPU-Cartridge glue functions
+// extern uint8_t core_cpu6502_read_from_main_bus(core_program_rom_t *, const uint16_t);
+// extern void core_cartridge_prgrom_write_to_main_bus(core_program_rom_t *, const uint16_t, const uint8_t);
+// extern uint8_t core_cartridge_pattern_read_from_ppu_bus(core_pattern_t *, const uint16_t);
+// extern void core_cartridge_pattern_write_to_ppu_bus(core_pattern_t *, const uint16_t, const uint8_t);
 
 
 
