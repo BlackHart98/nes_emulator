@@ -28,8 +28,6 @@ core_cartridge_t core_cartridge_init(const char * file_name){
         assert(0&&"File does not exist.");
     }
 
-    uint64_t some_val[2] = {0};
-
     // read the nes file header
     fread((char *)&header, sizeof(header), 1, fhandle);
 
@@ -49,8 +47,10 @@ core_cartridge_t core_cartridge_init(const char * file_name){
 
     uint8_t n_filetype = 1;
 
-    if (n_filetype == 0);
+    if (n_filetype == 0)
+    ;
 
+    // Warning this is a TNT!
     utils_dyn_array_t program_memory = utils_dyn_array_init(header.prgrom_chunks * KB(16));
     utils_dyn_array_t character_memory = utils_dyn_array_init(header.chrrom_chunks * KB(8));
     if (n_filetype == 1){
@@ -59,7 +59,8 @@ core_cartridge_t core_cartridge_init(const char * file_name){
     }
 
 
-    if (n_filetype == 2);
+    if (n_filetype == 2)
+    ;
 
     fclose(fhandle);
     return (core_cartridge_t){

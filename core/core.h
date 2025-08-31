@@ -218,6 +218,7 @@ extern uint8_t core_cpu6502_perform_operation(core_cpu_t * __restrict, core_cpu_
 
 extern uint8_t core_cpu6502_getflag(FLAGS6502_T, const core_cpu_register_t *);
 extern void core_cpu6502_setflag(FLAGS6502_T, core_cpu_register_t *, bool);
+extern void core_cpu6502_disassemble(uint16_t, uint16_t);
 
 
 // PPU functions
@@ -254,6 +255,7 @@ extern int core_emulator_emulate(
     , core_ppu_register_t *     ppu_register
     , core_name_table_t *       name_table
     , core_pattern_t *          pattern
+    , core_program_rom_t *      prgrom
     , core_cartridge_t *        cartridge
 );
 

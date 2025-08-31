@@ -252,6 +252,7 @@ void core_cpu6502_clock(
         cpu->cycles += (addressmode_cycle & operation_cycle);
         core_cpu6502_setflag(UNUSED_BIT, cpu_register, true);
     }
+    printf("cycle is #%d\n", cpu->cycles);
     cpu->cycles--;
 }
 

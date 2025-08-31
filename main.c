@@ -21,30 +21,21 @@ int main(int argc, char * argv[]){
     core_cartridge_t some_cartridge = core_cartridge_init(game_file_name);
     core_program_rom_t my_prgrom = core_program_rom_init(&my_bus);
 
-    printf("Hello world there, this is the data in the address 0x0 = #%i.\n", my_bus.address_line[0]);
 
-    core_cpu6502_write(&my_bus, 0x0000, 5);
-    printf("Here is the address of the bus, #%d\n", my_bus.address_line[0x0000]);
-    printf("Here is the address of the ram, #%d\n", my_ram.buffer[0x0000]);
+    core_emulator_emulate(
+        &my_bus, 
+        &my_cpu, 
+        &my_cpu_register, 
+        &my_ram, 
+        &my_ppu, 
+        &my_ppu_bus,
+        &my_ppu_register, 
+        &my_name_table, 
+        &my_pattern, 
+        &my_prgrom,
+        &some_cartridge);
 
-    core_cpu6502_write(&my_bus, (0x2000 + 2), 90);
-    printf("Here is the address of the bus, #%d\n", my_bus.address_line[(0x0000)]);
-    printf("Here is the address of the ppu register, #%d\n", my_ppu_register.ppu_register[0x0002]);
-
-    // core_emulator_emulate(NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-
-    utils_dyn_array_set_index(&some_cartridge.character_memory, 0, 4);
-
-    printf("Here is the value at index = #%d.\n", utils_dyn_array_get_index(&some_cartridge.character_memory, 0));
-
-    core_cartridge_map_prgrom_chunk(&some_cartridge, &my_prgrom);
-
-    printf("here is the content of the on the my_prgrom.program_memory[0] = #%x\n", my_prgrom.program_memory[0]);
 
     core_cartridge_deinit(&some_cartridge);
-
-    // This should segfault, but I abort it before it does
-    // printf("Here is the value at index = #%d.\n", utils_dyn_array_get_index(&some_cartridge.character_memory, 0));
-
     return 0;
 }
