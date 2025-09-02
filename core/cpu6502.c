@@ -236,18 +236,19 @@ void core_cpu6502_clock(
         cpu_register->program_counter++;
         cpu->cycles = core_lookup[cpu->opcode].cycles;
 
-        uint16_t operation_cycle = core_cpu6502_perform_operation(
-            cpu
-            , cpu_register
-            , bus
-            , core_lookup[cpu->opcode].instruction_code
-        );
-
         uint16_t addressmode_cycle = core_cpu6502_perform_fetch(
             cpu
             , cpu_register
             , bus
             , core_lookup[cpu->opcode].address_mode
+        );
+
+
+        uint16_t operation_cycle = core_cpu6502_perform_operation(
+            cpu
+            , cpu_register
+            , bus
+            , core_lookup[cpu->opcode].instruction_code
         );
 
         cpu->cycles += (addressmode_cycle & operation_cycle);
