@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <unistd.h>
 #include "core.h"
 
 
@@ -25,20 +26,25 @@ int core_emulator_emulate(char * game_file_path){
     core_cartridge_map_prgrom_chunk(&cartridge, &cpu, &prgrom);
     core_cartridge_map_chrrom_chunk(&cartridge, &ppu, &pattern);
 
+    float elapsed_time = 0.0f;
+    bool frame_completed = false;
+
     for(;;){
-        printf("----------------------\n");
-        printf("PPU tick.\n");
-        core_ppu2C02_clock(&ppu);
-        // ppu tick
-        if ((nes_system_clock % 3) == 0){
-            // cpu tick;
-            printf("======================\n");
-            printf("CPU tick.\n");
-            core_cpu6502_clock(&cpu, &cpu_register, &main_bus, 0x8000); // read in the program on the cartridge
-        }
-        nes_system_clock += 1;
-        if (nes_system_clock >= 28)
+        printf("rendering frame...\n");
+        do{
+            // ppu tick
+            frame_completed = core_ppu2C02_clock(&ppu);
+            if ((nes_system_clock % 3) == 0){
+                // cpu tick;
+                core_cpu6502_clock(&cpu, &cpu_register, &main_bus, 0x8000); // read in the program on the cartridge
+            }
+            nes_system_clock += 1;
+        } while(!frame_completed);
+        if (frame_completed) {
+            printf("done rendering frame\n");
             break;
+        }
+        frame_completed = false;
     }
     core_cartridge_deinit(&cartridge);
     return 0;
