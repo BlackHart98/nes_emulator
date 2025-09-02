@@ -3,7 +3,7 @@ A Nintendo ES emulator, in the end it's slop code, but I just had to do it for t
 
 
 # Requirements
-- Obviously the C compiler, Clang preferrably
+- C compiler (Clang or GCC)
 - For now I can only guarantee UNIX-like OS (macOS 👉👈)
 
 # To build
