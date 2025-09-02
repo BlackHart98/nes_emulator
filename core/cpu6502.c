@@ -80,6 +80,7 @@ const core_instruction_t core_lookup[LOOKUP_TABLE_SIZE] = {
 core_cpu_t core_cpu6502_cpu_init(){
     return (core_cpu_t){
         .fetched = 0x00,
+        .n_prgbanks_id = 0x00,
         .opcode = 0x00,
         .cycles = 0,
         .addr_abs = 0x0000,
@@ -125,7 +126,7 @@ core_program_rom_t core_program_rom_init(core_main_bus_t * bus){
 }
 
 
-uint8_t core_cpu6502_read(core_main_bus_t * bus, const uint16_t address){
+uint8_t core_cpu6502_read(core_cpu_t* cpu, core_main_bus_t * bus, const uint16_t address){
     printf("CPU is reading from...\n");
     if (address >= 0x8000 && address <= 0xFFFF){
         // cartridge read
@@ -135,35 +136,34 @@ uint8_t core_cpu6502_read(core_main_bus_t * bus, const uint16_t address){
 }
 
 
-uint8_t core_cpu6502_read_only(const core_main_bus_t * bus, const uint16_t address){
-    printf("CPU is reading (read-only mode) from...\n");
+uint8_t core_cpu6502_read_only(core_cpu_t* cpu, const core_main_bus_t * bus, const uint16_t address){
     if (address >= 0x0000 && address <= (KB(8) - 1)){
         return bus->address_line[address & (KB(2) - 1)]; // Mirroring
     } else if (address >= 0x2000 && address <= 0x3FFF){
         return bus->address_line[0x2000 + (address & 0x0007)];
     } else if (address >= 0x8000 && address <= 0xFFFF){
         // cartridge read only
-        return bus->address_line[address];
+        return bus->address_line[0x8000 + (address & (cpu->n_prgbanks_id > 1? 0x7FFF : 0x3FFF))];
     }
     return 0x00;
 }
 
-void core_cpu6502_write(core_main_bus_t * bus, const uint16_t address, const uint8_t data){
-    printf("Writing data #%d, into address $%d\n", data, address);
+void core_cpu6502_write(core_cpu_t* cpu, core_main_bus_t * bus, const uint16_t address, const uint8_t data){
     if (address >= 0x0000 && address <= (KB(8) - 1)){
         bus->address_line[address & (KB(2) - 1)] = data;
     } else if (address >= 0x2000 && address <= 0x3FFF){
         bus->address_line[0x2000 + (address & 0x0007)] = data;
     } else if (address >= 0x8000 && address <= 0xFFFF){
         // cartridge write
-        bus->address_line[address] = data;
+        bus->address_line[0x8000 + (address & (cpu->n_prgbanks_id > 1? 0x7FFF : 0x3FFF))] = data;
     }
 }
 
 void core_cpu6502_reset(core_cpu_t * __restrict cpu, core_cpu_register_t * __restrict cpu_register, core_main_bus_t * bus){
     cpu->addr_abs = 0xFFFC;
-	uint16_t low_word = core_cpu6502_read_only(bus, cpu->addr_abs + 0);
-	uint16_t high_word = core_cpu6502_read_only(bus, cpu->addr_abs + 1);
+    uint16_t low_word = core_cpu6502_read_only(cpu, bus, cpu->addr_abs + 0);
+    uint16_t high_word = core_cpu6502_read_only(cpu, bus, cpu->addr_abs + 1);
+
     cpu_register->program_counter =  low_word | (high_word << 8);
 
     cpu_register->a = 0x00;
@@ -182,20 +182,20 @@ void core_cpu6502_reset(core_cpu_t * __restrict cpu, core_cpu_register_t * __res
 
 void core_cpu6502_irq(core_cpu_t * __restrict cpu, core_cpu_register_t * __restrict cpu_register, core_main_bus_t * bus){
     if (core_cpu6502_getflag(INTERRUPT_BIT, cpu_register) == 0){
-        core_cpu6502_write(bus, 0x0100 + cpu_register->stack_pointer, (cpu_register->program_counter >> 8) & 0x00FF);
+        core_cpu6502_write(cpu, bus, 0x0100 + cpu_register->stack_pointer, (cpu_register->program_counter >> 8) & 0x00FF);
 		cpu_register->stack_pointer--;
-		core_cpu6502_write(bus, 0x0100 + cpu_register->stack_pointer, cpu_register->program_counter & 0x00FF);
+		core_cpu6502_write(cpu, bus, 0x0100 + cpu_register->stack_pointer, cpu_register->program_counter & 0x00FF);
 		cpu_register->stack_pointer--;
 
         core_cpu6502_setflag(BREAK_BIT, cpu_register, false);
         core_cpu6502_setflag(UNUSED_BIT, cpu_register, true);
         core_cpu6502_setflag(INTERRUPT_BIT, cpu_register, true);
-        core_cpu6502_write(bus, 0x0100 + cpu_register->stack_pointer, cpu_register->program_counter & 0x00FF);
+        core_cpu6502_write(cpu, bus, 0x0100 + cpu_register->stack_pointer, cpu_register->program_counter & 0x00FF);
 		cpu_register->stack_pointer--;
 
         cpu->addr_abs = 0xFFFC;
-        uint16_t low_word = core_cpu6502_read_only(bus, cpu->addr_abs + 0);
-        uint16_t high_word = core_cpu6502_read_only(bus, cpu->addr_abs + 1);
+        uint16_t low_word = core_cpu6502_read_only(cpu, bus, cpu->addr_abs + 0);
+        uint16_t high_word = core_cpu6502_read_only(cpu, bus, cpu->addr_abs + 1);
         cpu_register->program_counter =  low_word | (high_word << 8);
 
         cpu->cycles = 7;
@@ -203,20 +203,20 @@ void core_cpu6502_irq(core_cpu_t * __restrict cpu, core_cpu_register_t * __restr
 }
 
 void core_cpu6502_nmi(core_cpu_t * __restrict cpu, core_cpu_register_t * __restrict cpu_register, core_main_bus_t * bus){
-    core_cpu6502_write(bus, 0x0100 + cpu_register->stack_pointer, (cpu_register->program_counter >> 8) & 0x00FF);
+    core_cpu6502_write(cpu, bus, 0x0100 + cpu_register->stack_pointer, (cpu_register->program_counter >> 8) & 0x00FF);
     cpu_register->stack_pointer--;
-    core_cpu6502_write(bus, 0x0100 + cpu_register->stack_pointer, cpu_register->program_counter & 0x00FF);
+    core_cpu6502_write(cpu, bus, 0x0100 + cpu_register->stack_pointer, cpu_register->program_counter & 0x00FF);
     cpu_register->stack_pointer--;
 
     core_cpu6502_setflag(BREAK_BIT, cpu_register, false);
     core_cpu6502_setflag(UNUSED_BIT, cpu_register, true);
     core_cpu6502_setflag(INTERRUPT_BIT, cpu_register, true);
-    core_cpu6502_write(bus, 0x0100 + cpu_register->stack_pointer, cpu_register->program_counter & 0x00FF);
+    core_cpu6502_write(cpu, bus, 0x0100 + cpu_register->stack_pointer, cpu_register->program_counter & 0x00FF);
     cpu_register->stack_pointer--;
 
     cpu->addr_abs = 0xFFFC;
-    uint16_t low_word = core_cpu6502_read_only(bus, cpu->addr_abs + 0);
-    uint16_t high_word = core_cpu6502_read_only(bus, cpu->addr_abs + 1);
+    uint16_t low_word = core_cpu6502_read_only(cpu, bus, cpu->addr_abs + 0);
+    uint16_t high_word = core_cpu6502_read_only(cpu, bus, cpu->addr_abs + 1);
     cpu_register->program_counter =  low_word | (high_word << 8);
 
     cpu->cycles = 7;
@@ -227,20 +227,14 @@ void core_cpu6502_clock(
     core_cpu_t * __restrict cpu
     , core_cpu_register_t * __restrict cpu_register
     , core_main_bus_t * bus
+    , const uint16_t offset // this is to help map read to the program rom
 ){
     // only goes to the next operation if the cycles is 0
     if (cpu->cycles == 0){
-        cpu->opcode = core_cpu6502_read_only(bus, cpu_register->program_counter);
+        cpu->opcode = core_cpu6502_read_only(cpu, bus, (offset + cpu_register->program_counter));
         core_cpu6502_setflag(UNUSED_BIT, cpu_register, true);
         cpu_register->program_counter++;
         cpu->cycles = core_lookup[cpu->opcode].cycles;
-
-        uint16_t addressmode_cycle = core_cpu6502_perform_fetch(
-            cpu
-            , cpu_register
-            , bus
-            , core_lookup[cpu->opcode].address_mode
-        );
 
         uint16_t operation_cycle = core_cpu6502_perform_operation(
             cpu
@@ -249,10 +243,16 @@ void core_cpu6502_clock(
             , core_lookup[cpu->opcode].instruction_code
         );
 
+        uint16_t addressmode_cycle = core_cpu6502_perform_fetch(
+            cpu
+            , cpu_register
+            , bus
+            , core_lookup[cpu->opcode].address_mode
+        );
+
         cpu->cycles += (addressmode_cycle & operation_cycle);
         core_cpu6502_setflag(UNUSED_BIT, cpu_register, true);
     }
-    printf("cycle is #%d\n", cpu->cycles);
     cpu->cycles--;
 }
 
@@ -260,7 +260,7 @@ void core_cpu6502_clock(
 void core_cpu6502_fetch_into_cpu(core_cpu_t * __restrict cpu, core_main_bus_t * __restrict bus){
     if (!(core_lookup[cpu->opcode].address_mode == IMP)){
         uint8_t absolute_address = cpu->addr_abs;
-        cpu->fetched = core_cpu6502_read_only(bus, absolute_address);
+        cpu->fetched = core_cpu6502_read_only(cpu, bus, absolute_address);
     }
 }
 
@@ -288,36 +288,36 @@ uint8_t core_cpu6502_perform_fetch(
             cpu->addr_abs = cpu_register->program_counter++;
             break;
         case ZP0:
-            cpu->addr_abs = core_cpu6502_read_only(bus, cpu_register->program_counter);
+            cpu->addr_abs = core_cpu6502_read_only(cpu, bus, cpu_register->program_counter);
             cpu_register->program_counter++;
             cpu->addr_abs &= 0x00FF;
             break;
         case ZPX:
-            cpu->addr_abs = core_cpu6502_read_only(bus, cpu_register->program_counter) + cpu_register->x;
+            cpu->addr_abs = core_cpu6502_read_only(cpu, bus, cpu_register->program_counter) + cpu_register->x;
             cpu_register->program_counter++;
             cpu->addr_abs &= 0x00FF;
             break;
         case ZPY:
-            cpu->addr_abs = core_cpu6502_read_only(bus, cpu_register->program_counter) + cpu_register->y;
+            cpu->addr_abs = core_cpu6502_read_only(cpu, bus, cpu_register->program_counter) + cpu_register->y;
             cpu_register->program_counter++;
             cpu->addr_abs &= 0x00FF;
             break;
         case REL:
-            cpu->addr_abs = core_cpu6502_read_only(bus, cpu_register->program_counter);
+            cpu->addr_abs = core_cpu6502_read_only(cpu, bus, cpu_register->program_counter);
             cpu_register->program_counter++;
             if (cpu->addr_rel & 0x80) cpu->addr_rel |= 0xFF00; 
             break;
         case ABS:
-            low_word = core_cpu6502_read_only(bus, cpu_register->program_counter);
+            low_word = core_cpu6502_read_only(cpu, bus, cpu_register->program_counter);
             cpu_register->program_counter++;
-            high_word = core_cpu6502_read_only(bus, cpu_register->program_counter);
+            high_word = core_cpu6502_read_only(cpu, bus, cpu_register->program_counter);
             cpu_register->program_counter++;
             cpu->addr_abs = (high_word << 8) | low_word;
             break;
         case ABX:
-            low_word = core_cpu6502_read_only(bus, cpu_register->program_counter);
+            low_word = core_cpu6502_read_only(cpu, bus, cpu_register->program_counter);
             cpu_register->program_counter++;
-            high_word = core_cpu6502_read_only(bus, cpu_register->program_counter);
+            high_word = core_cpu6502_read_only(cpu, bus, cpu_register->program_counter);
             cpu_register->program_counter++;
             cpu->addr_abs = (high_word << 8) | low_word;
             cpu->addr_abs += cpu_register->x;
@@ -325,9 +325,9 @@ uint8_t core_cpu6502_perform_fetch(
                 cycles += 1;
             break;
         case ABY:
-            low_word = core_cpu6502_read_only(bus, cpu_register->program_counter);
+            low_word = core_cpu6502_read_only(cpu, bus, cpu_register->program_counter);
             cpu_register->program_counter++;
-            high_word = core_cpu6502_read_only(bus, cpu_register->program_counter);
+            high_word = core_cpu6502_read_only(cpu, bus, cpu_register->program_counter);
             cpu_register->program_counter++;
             cpu->addr_abs = (high_word << 8) | low_word;
             cpu->addr_abs += cpu_register->y;
@@ -335,35 +335,39 @@ uint8_t core_cpu6502_perform_fetch(
                 cycles += 1;
             break;
         case IND:
-            low_word_ptr = core_cpu6502_read_only(bus, cpu_register->program_counter);
+            low_word_ptr = core_cpu6502_read_only(cpu, bus, cpu_register->program_counter);
             cpu_register->program_counter++;
-            high_word_ptr = core_cpu6502_read_only(bus, cpu_register->program_counter);
+            high_word_ptr = core_cpu6502_read_only(cpu, bus, cpu_register->program_counter);
             cpu_register->program_counter++;
             ptr = (high_word_ptr << 8) | low_word_ptr;
             if (low_word_ptr == 0x00FF)
-                cpu->addr_abs = (core_cpu6502_read_only(bus, ptr & 0xFF00) << 8) | core_cpu6502_read_only(bus, ptr);
+                cpu->addr_abs = (core_cpu6502_read_only(cpu, bus, ptr & 0xFF00) << 8) | core_cpu6502_read_only(cpu, bus, ptr);
             else
-                cpu->addr_abs = (core_cpu6502_read_only(bus, ptr + 1) << 8) | core_cpu6502_read_only(bus, ptr);
+                cpu->addr_abs = (core_cpu6502_read_only(cpu, bus, ptr + 1) << 8) | core_cpu6502_read_only(cpu, bus, ptr);
             break;
         case IDX:
-            temp_ = core_cpu6502_read_only(bus, cpu_register->program_counter);
+            temp_ = core_cpu6502_read_only(cpu, bus, cpu_register->program_counter);
             cpu_register->program_counter++;
             low_word = core_cpu6502_read_only(
-                bus
+                cpu
+                , bus
                 , (uint16_t)(temp_ + (uint16_t)cpu_register->x) & 0x00FF);
             high_word = core_cpu6502_read_only(
-                bus
+                cpu
+                , bus
                 , (uint16_t)(temp_ + (uint16_t)cpu_register->x + 1) & 0x00FF);
             cpu->addr_abs = (high_word << 8) | low_word; 
             break;
         case IDY:
-            temp_ = core_cpu6502_read_only(bus, cpu_register->program_counter);
+            temp_ = core_cpu6502_read_only(cpu, bus, cpu_register->program_counter);
             cpu_register->program_counter++;
             low_word = core_cpu6502_read_only(
-                bus
+                cpu
+                , bus
                 , (uint16_t)(temp_ + (uint16_t)cpu_register->y) & 0x00FF);
             high_word = core_cpu6502_read_only(
-                bus
+                cpu
+                , bus
                 , (uint16_t)(temp_ + (uint16_t)cpu_register->y + 1) & 0x00FF);
             cpu->addr_abs = (high_word << 8) | low_word; 
             if ((cpu->addr_abs & 0xFF00) != (high_word << 0))
@@ -390,27 +394,29 @@ uint8_t core_cpu6502_perform_operation(
             cpu_register->program_counter++;
             core_cpu6502_setflag(BREAK_BIT, cpu_register, true);
             core_cpu6502_write(
-                bus
+                cpu
+                , bus
                 , cpu_register->stack_pointer + 0x0100
                 , (cpu_register->program_counter >> 8) & 0x00FF
             );
             cpu_register->stack_pointer--;
             core_cpu6502_write(
-                bus
+                cpu
+                , bus
                 , cpu_register->stack_pointer + 0x0100
                 , cpu_register->program_counter & 0x00FF
             );
             cpu_register->stack_pointer--;
             core_cpu6502_setflag(BREAK_BIT, cpu_register, true);
             core_cpu6502_write(
-                bus
+                cpu
+                , bus
                 , cpu_register->stack_pointer + 0x0100
                 , cpu_register->status
             );
             cpu_register->stack_pointer--;
-            cpu_register->program_counter = (uint16_t)core_cpu6502_read_only(bus, 0xFFFE) 
-                | ((uint16_t)core_cpu6502_read_only(bus, 0xFFFF) << 8);
-            
+            cpu_register->program_counter = (uint16_t)core_cpu6502_read_only(cpu, bus, 0xFFFE) 
+                | ((uint16_t)core_cpu6502_read_only(cpu, bus, 0xFFFF) << 8);
             break;
         case ORA:
             core_cpu6502_fetch_into_cpu(cpu, bus);
@@ -428,10 +434,10 @@ uint8_t core_cpu6502_perform_operation(
             if (core_lookup[cpu->opcode].address_mode == IMP)
                 cpu_register->a = temp_ & 0x00FF;
             else
-                core_cpu6502_write(bus, cpu->addr_abs, temp_ & 0x00FF);
+                core_cpu6502_write(cpu, bus, cpu->addr_abs, temp_ & 0x00FF);
             break;
         case PHP:
-            core_cpu6502_write(bus, cpu->addr_abs + 0x0100, cpu_register->a | BREAK_BIT | UNUSED_BIT);
+            core_cpu6502_write(cpu, bus, cpu->addr_abs + 0x0100, cpu_register->a | BREAK_BIT | UNUSED_BIT);
             core_cpu6502_setflag(BREAK_BIT, cpu_register, 0);
             core_cpu6502_setflag(UNUSED_BIT, cpu_register, 0);
             break;
@@ -454,17 +460,17 @@ uint8_t core_cpu6502_perform_operation(
             break;
         case JSR:
             cpu_register->program_counter--;
-            core_cpu6502_write(bus, cpu_register->stack_pointer + 0x0100, (cpu_register->program_counter >> 8) & 0x00FF);
+            core_cpu6502_write(cpu, bus, cpu_register->stack_pointer + 0x0100, (cpu_register->program_counter >> 8) & 0x00FF);
             cpu_register->stack_pointer--;
-            core_cpu6502_write(bus, cpu_register->stack_pointer + 0x0100, cpu_register->program_counter & 0x00FF);
+            core_cpu6502_write(cpu, bus, cpu_register->stack_pointer + 0x0100, cpu_register->program_counter & 0x00FF);
             cpu_register->stack_pointer--;
             cpu_register->program_counter = cpu->addr_abs;
             break;
         case RTS:
             cpu_register->stack_pointer++;
-            cpu_register->program_counter = (uint16_t)core_cpu6502_read_only(bus, cpu_register->stack_pointer + 0x0100);
+            cpu_register->program_counter = (uint16_t)core_cpu6502_read_only(cpu, bus, cpu_register->stack_pointer + 0x0100);
             cpu_register->stack_pointer++;
-            cpu_register->program_counter |= (uint16_t)core_cpu6502_read_only(bus, cpu_register->stack_pointer + 0x0100) << 8;
+            cpu_register->program_counter |= (uint16_t)core_cpu6502_read_only(cpu, bus, cpu_register->stack_pointer + 0x0100) << 8;
             cpu_register->program_counter++;
             break;
         case BIT:
@@ -488,11 +494,11 @@ uint8_t core_cpu6502_perform_operation(
             if (core_lookup[cpu->opcode].address_mode == IMP)
                 cpu_register->a = temp_ & 0x00FF;
             else 
-                core_cpu6502_write(bus, cpu->addr_abs, temp_ & 0x00FF);
+                core_cpu6502_write(cpu, bus, cpu->addr_abs, temp_ & 0x00FF);
             break;
         case PLP:
             cpu_register->stack_pointer++;
-            cpu_register->status = core_cpu6502_read_only(bus, 0x0100 + cpu_register->stack_pointer);
+            cpu_register->status = core_cpu6502_read_only(cpu, bus, 0x0100 + cpu_register->stack_pointer);
             break;
         case AND:
             core_cpu6502_fetch_into_cpu(cpu, bus);
@@ -515,13 +521,13 @@ uint8_t core_cpu6502_perform_operation(
             break;
         case RTI:
             cpu_register->stack_pointer++;
-            cpu_register->status = core_cpu6502_read_only(bus, 0x0100 + cpu_register->stack_pointer);
+            cpu_register->status = core_cpu6502_read_only(cpu, bus, 0x0100 + cpu_register->stack_pointer);
             cpu_register->status &= ~BREAK_BIT;
             cpu_register->status &= ~UNUSED_BIT;
             cpu_register->stack_pointer++;
-            cpu_register->program_counter = (uint16_t)core_cpu6502_read_only(bus, 0x0100 + cpu_register->stack_pointer);
+            cpu_register->program_counter = (uint16_t)core_cpu6502_read_only(cpu, bus, 0x0100 + cpu_register->stack_pointer);
             cpu_register->stack_pointer++;
-            cpu_register->program_counter |= (uint16_t)core_cpu6502_read_only(bus, 0x0100 + cpu_register->stack_pointer) << 8;
+            cpu_register->program_counter |= (uint16_t)core_cpu6502_read_only(cpu, bus, 0x0100 + cpu_register->stack_pointer) << 8;
             break;
         case EOR:
             core_cpu6502_fetch_into_cpu(cpu, bus);
@@ -538,11 +544,11 @@ uint8_t core_cpu6502_perform_operation(
             if (core_lookup[cpu->opcode].address_mode == IMP)
                 cpu_register->a = temp_ & 0x00FF;
             else
-                core_cpu6502_write(bus, cpu->addr_abs, temp_ & 0x00FF);
+                core_cpu6502_write(cpu, bus, cpu->addr_abs, temp_ & 0x00FF);
             return 0; 
             break;
         case PHA:
-            core_cpu6502_write(bus, cpu_register->stack_pointer + 0x0100, cpu_register->a);
+            core_cpu6502_write(cpu, bus, cpu_register->stack_pointer + 0x0100, cpu_register->a);
             cpu_register->stack_pointer--;
             break;
         case JMP:
@@ -594,19 +600,19 @@ uint8_t core_cpu6502_perform_operation(
             if (core_lookup[cpu->opcode].address_mode == IMP)
                 cpu_register->a = temp_ & 0x00FF;
             else 
-                core_cpu6502_write(bus, cpu->addr_abs, temp_ & 0x00FF);
+                core_cpu6502_write(cpu, bus, cpu->addr_abs, temp_ & 0x00FF);
             break;
         case SEI:
             core_cpu6502_setflag(INTERRUPT_BIT, cpu_register, true);
             break;
         case STA:
-            core_cpu6502_write(bus, cpu->addr_abs, cpu_register->a);
+            core_cpu6502_write(cpu, bus, cpu->addr_abs, cpu_register->a);
             break;
         case STY:
-            core_cpu6502_write(bus, cpu->addr_abs, cpu_register->y);
+            core_cpu6502_write(cpu, bus, cpu->addr_abs, cpu_register->y);
             break;
         case STX:
-            core_cpu6502_write(bus, cpu->addr_abs, cpu_register->x);
+            core_cpu6502_write(cpu, bus, cpu->addr_abs, cpu_register->x);
             break;
         case DEY:
             cpu_register->y--;
@@ -692,7 +698,7 @@ uint8_t core_cpu6502_perform_operation(
         case DEC:
             core_cpu6502_fetch_into_cpu(cpu, bus);
             temp_ = cpu->fetched - 1;
-            core_cpu6502_write(bus, cpu->addr_abs, temp_ & 0x00FF);
+            core_cpu6502_write(cpu, bus, cpu->addr_abs, temp_ & 0x00FF);
             core_cpu6502_setflag(ZERO_BIT, cpu_register, (temp_ & 0x00FF) == 0x0000);
             core_cpu6502_setflag(NEGATIVE_BIT, cpu_register, temp_ & 0x0080);
             break;
@@ -744,7 +750,7 @@ uint8_t core_cpu6502_perform_operation(
         case INC:
             core_cpu6502_fetch_into_cpu(cpu, bus);
             temp_ = cpu->fetched + 1;
-            core_cpu6502_write(bus, cpu->addr_abs, temp_ & 0x00FF);
+            core_cpu6502_write(cpu, bus, cpu->addr_abs, temp_ & 0x00FF);
             core_cpu6502_setflag(ZERO_BIT, cpu_register, (temp_ & 0x00FF) == 0x0000);
             core_cpu6502_setflag(NEGATIVE_BIT, cpu_register, temp_ & 0x0080);
             break;
@@ -780,7 +786,7 @@ uint8_t core_cpu6502_perform_operation(
             break;
         case PLA:
             cpu_register->stack_pointer++;
-            cpu_register->a = core_cpu6502_read_only(bus, 0x0100 + cpu_register->stack_pointer);
+            cpu_register->a = core_cpu6502_read_only(cpu, bus, 0x0100 + cpu_register->stack_pointer);
             core_cpu6502_setflag(ZERO_BIT, cpu_register, (cpu_register->a & 0x00FF) == 0);
             core_cpu6502_setflag(NEGATIVE_BIT, cpu_register, cpu_register->a & 0x0080);
             break;

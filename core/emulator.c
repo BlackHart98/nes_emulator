@@ -22,43 +22,23 @@ int core_emulator_emulate(char * game_file_path){
 
     // On create 
     uint32_t nes_system_clock = 0;
-    core_cartridge_map_prgrom_chunk(&cartridge, &prgrom);
-    core_cpu6502_reset(&cpu, &cpu_register, &main_bus);
-
-    printf("first 7 items in the program rom:\n");
-    for(int i = 0; i < 7; i++){
-        printf("%x ", prgrom.program_memory[i]);
-    }
-    printf("\n");
-
-
-    printf("first 7 items in the main bus + 0x8000:\n");
-    for(int i = 0; i < 7; i++){
-        printf("%x ", main_bus.address_line[0x8000 + i]);
-    }
-    printf("\n");
-
-
+    core_cartridge_map_prgrom_chunk(&cartridge, &cpu, &prgrom);
+    core_cartridge_map_chrrom_chunk(&cartridge, &ppu, &pattern);
 
     for(;;){
-        printf("----------------------");
+        printf("----------------------\n");
         printf("PPU tick.\n");
+        core_ppu2C02_clock(&ppu);
         // ppu tick
         if ((nes_system_clock % 3) == 0){
             // cpu tick;
-            printf("======================");
+            printf("======================\n");
             printf("CPU tick.\n");
-            printf("flags before:\n");
-            printf("%x", cpu_register.status);
-            printf("\n");
-            core_cpu6502_clock(&cpu, &cpu_register, &main_bus);
-            printf("Here is the content of the cpu ram:\n");
-            printf("flags after:\n");
-            printf("%x", cpu_register.status);
-            printf("\n");
+            core_cpu6502_clock(&cpu, &cpu_register, &main_bus, 0x8000); // read in the program on the cartridge
         }
         nes_system_clock += 1;
-        break;
+        if (nes_system_clock >= 28)
+            break;
     }
     core_cartridge_deinit(&cartridge);
     return 0;

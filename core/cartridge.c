@@ -43,8 +43,6 @@ core_cartridge_t core_cartridge_init(const char * file_name){
         assert(0&&"Program ROM chunk or Character Chunks cannot be 0.");
     }
 
-    printf("header.prgrom_chunks: #%d\n", header.prgrom_chunks);
-
     uint8_t n_filetype = 1;
 
     if (n_filetype == 0)
@@ -83,22 +81,22 @@ void core_cartridge_deinit(core_cartridge_t * cartridge){
 
 
 
-inline void core_cartridge_map_prgrom_chunk(core_cartridge_t * cartridge, core_program_rom_t * prgrom){
+inline void core_cartridge_map_prgrom_chunk(core_cartridge_t * cartridge, core_cpu_t * cpu, core_program_rom_t * prgrom){
     assert((prgrom != NULL)&&"Program ROM can't be NULL");
-    printf("mapping cartridge to program rom window\n");
     switch (cartridge->n_mapper_id){
         case 0: {
+            cpu->n_prgbanks_id = cartridge->n_prgbanks_id;
             memcpy(prgrom->program_memory, cartridge->program_memory.buffer, prgrom->capacity);
             break;
         }
     }
 }
 
-inline void core_cartridge_map_chrrom_chunk(core_cartridge_t * cartridge, core_pattern_t * chrrom){
+inline void core_cartridge_map_chrrom_chunk(core_cartridge_t * cartridge, core_ppu_t * ppu, core_pattern_t * chrrom){
     assert((chrrom != NULL)&&"Pattern memory can't be NULL");
-    printf("mapping cartridge to program rom window\n");
     switch (cartridge->n_mapper_id){
         case 0: {
+            ppu->n_chrbanks_id = cartridge->n_chrbanks_id;
             memcpy(chrrom->pattern_buffer, cartridge->character_memory.buffer, chrrom->capacity);
             break;
         }

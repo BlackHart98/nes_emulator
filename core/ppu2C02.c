@@ -8,6 +8,8 @@
 core_ppu_t core_ppu2C02_init(){
     return (core_ppu_t){
         .cycles = 0,
+        .scanlines = 0,
+        .clock_count = 0,
         .clock_count = 0,
     };
 }
@@ -111,4 +113,19 @@ void core_ppu2C02_write_to_ppu_bus(core_ppu_bus_t * ppu_bus, const uint16_t addr
     if (address >= 0x0000 && address <= 0x1FFF){
         ppu_bus->address_line[address] = data;
     }
+}
+
+bool core_ppu2C02_clock(core_ppu_t * ppu){
+    ppu->cycles++;
+	if (ppu->cycles >= 341)
+	{
+		ppu->cycles = 0;
+		ppu->scanlines++;
+		if (ppu->scanlines >= 261)
+		{
+			ppu->scanlines = -1;
+			return true;
+		}
+	}
+    return false;
 }

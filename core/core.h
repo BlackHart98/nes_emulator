@@ -57,6 +57,7 @@ typedef struct _core_instruction_t {
 
 
 typedef struct _core_cpu_t{
+    uint8_t     n_prgbanks_id;
     uint8_t     fetched;
     uint8_t     opcode;
     uint8_t     cycles;
@@ -102,7 +103,9 @@ typedef struct _core_ram_t{
 
 // NES: PPU
 typedef struct _core_ppu_t{
-    uint8_t     cycles;
+    uint8_t     n_chrbanks_id;
+    uint16_t    cycles;
+    uint16_t    scanlines;
     uint32_t    clock_count;
 } core_ppu_t;
 
@@ -204,13 +207,13 @@ extern void core_cartridge_deinit(core_cartridge_t *);
 
 
 // CPU functions
-extern uint8_t core_cpu6502_read(core_main_bus_t *, const uint16_t);
-extern uint8_t core_cpu6502_read_only(const core_main_bus_t *, const uint16_t);
-extern void core_cpu6502_write(core_main_bus_t *, const uint16_t, const uint8_t);
+extern uint8_t core_cpu6502_read(core_cpu_t*, core_main_bus_t *, const uint16_t);
+extern uint8_t core_cpu6502_read_only(core_cpu_t*, const core_main_bus_t *, const uint16_t);
+extern void core_cpu6502_write(core_cpu_t*, core_main_bus_t *, const uint16_t, const uint8_t);
 extern void core_cpu6502_reset(core_cpu_t * __restrict, core_cpu_register_t * __restrict, core_main_bus_t *);
 extern void core_cpu6502_irq(core_cpu_t * __restrict, core_cpu_register_t * __restrict, core_main_bus_t *);
 extern void core_cpu6502_nmi(core_cpu_t * __restrict, core_cpu_register_t * __restrict, core_main_bus_t *);
-extern void core_cpu6502_clock(core_cpu_t * __restrict, core_cpu_register_t * __restrict, core_main_bus_t *);
+extern void core_cpu6502_clock(core_cpu_t * __restrict, core_cpu_register_t * __restrict, core_main_bus_t *, const uint16_t offset);
 
 extern void core_cpu6502_fetch_into_cpu(core_cpu_t * __restrict, core_main_bus_t * __restrict);
 extern uint8_t core_cpu6502_perform_fetch(core_cpu_t * __restrict, core_cpu_register_t * __restrict, core_main_bus_t *, ADDRESS_MODE_T);
@@ -226,13 +229,13 @@ extern uint8_t core_ppu2C02_read_from_main_bus(core_ppu_register_t *, const uint
 extern void core_ppu2C02_write_to_main_bus(core_ppu_register_t *, const uint16_t, const uint8_t);
 extern uint8_t core_ppu2C02_read_from_ppu_bus(core_ppu_bus_t *, const uint16_t);
 extern void core_ppu2C02_write_to_ppu_bus(core_ppu_bus_t *, const uint16_t, const uint8_t);
-extern void core_ppu2C02_clock(core_ppu_t *);
+extern bool core_ppu2C02_clock(core_ppu_t *);
 
 
-// Cartridge functions
-extern void core_cartridge_map_prgrom_chunk(core_cartridge_t *, core_program_rom_t *);
-extern void core_cartridge_map_chrrom_chunk(core_cartridge_t *, core_pattern_t *);
-// Not quite sure about these functions
+// Cartridge glue functions
+extern void core_cartridge_map_prgrom_chunk(core_cartridge_t *, core_cpu_t *, core_program_rom_t *);
+extern void core_cartridge_map_chrrom_chunk(core_cartridge_t *, core_ppu_t *, core_pattern_t *);
+// Not quite sure about these functions below
 extern void core_cartridge_relay_prgrom_chunk(core_cartridge_t *, core_program_rom_t *);
 extern void core_cartridge_relay_chrrom_chunk(core_cartridge_t *, core_pattern_t *);
 
