@@ -2,8 +2,34 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <assert.h>
-#include <unistd.h>
+
+#if defined(_WIN32)
+    #define OS_WINDOWS
+    #include <windows.h>
+#elif defined(__APPLE__) || defined(__linux__)
+    #define OS_UNIX_LIKE
+    #include <unistd.h>
+#endif
+
 #include "core.h"
+
+#define SECOND_PER_FRAME (1.0f / 60.0f)
+#define DEFAULT_COEFFICIENT 1.0f
+
+
+#if defined(OS_UNIX_LIKE)
+static inline useconds_t core_emulator_interval(float);
+
+useconds_t core_emulator_interval(float coeff){
+    return (useconds_t)(coeff * SECOND_PER_FRAME * 1000000);
+}
+#elif defined(OS_WINDOWS)
+static inline int core_emulator_interval(float);
+
+int core_emulator_interval(float coeff){
+    return (int)(coeff * SECOND_PER_FRAME * 1000);
+}
+#endif
 
 
 // Still working with the happy path
@@ -26,9 +52,13 @@ int core_emulator_emulate(char * game_file_path){
     core_cartridge_map_prgrom_chunk(&cartridge, &cpu, &prgrom);
     core_cartridge_map_chrrom_chunk(&cartridge, &ppu, &pattern);
 
+    core_cpu6502_reset(&cpu, &cpu_register, &main_bus);
+
     float elapsed_time = 0.0f;
     bool frame_completed = false;
-
+    float framecount__ = 0.0f;
+    float number_of_frames = 0.0f;
+    
     for(;;){
         printf("rendering frame...\n");
         do{
@@ -41,9 +71,23 @@ int core_emulator_emulate(char * game_file_path){
             nes_system_clock += 1;
         } while(!frame_completed);
         if (frame_completed) {
-            printf("done rendering frame\n");
-            break;
+#if defined(OS_UNIX_LIKE)
+            printf("done rendering frame, sleeping for %.4f secs\n", (float)core_emulator_interval(DEFAULT_COEFFICIENT)/1000000);
+#endif
+            number_of_frames += 1;
+            framecount__ += core_emulator_interval(DEFAULT_COEFFICIENT);
+            if (number_of_frames == 60.0f){
+#if defined(OS_UNIX_LIKE)
+                printf("Expected time #~%f actual output #~%f\n", DEFAULT_COEFFICIENT, (float)framecount__/1000000);
+#endif
+                break;
+            }
         }
+#if defined(OS_UNIX_LIKE)
+        usleep(core_emulator_interval(DEFAULT_COEFFICIENT));
+#elif defined(OS_WINDOWS)
+        Sleep(core_emulator_interval(DEFAULT_COEFFICIENT)); // this is in millisecs
+#endif
         frame_completed = false;
     }
     core_cartridge_deinit(&cartridge);

@@ -32,7 +32,6 @@ core_cartridge_t core_cartridge_init(const char * file_name){
     fread((char *)&header, sizeof(header), 1, fhandle);
 
     if (header.mapper1 & 0x04){ 
-        printf("Got here...\n");
         if (fseek(fhandle, 512, SEEK_CUR) != 0)
             assert(0&&"Could not find trainer.");
     }
@@ -48,14 +47,22 @@ core_cartridge_t core_cartridge_init(const char * file_name){
     if (n_filetype == 0)
     ;
 
-    // Warning this is a TNT!
-    utils_dyn_array_t program_memory = utils_dyn_array_init(header.prgrom_chunks * KB(16));
-    utils_dyn_array_t character_memory = utils_dyn_array_init(header.chrrom_chunks * KB(8));
-    if (n_filetype == 1){
-        fread((char *)program_memory.buffer, program_memory.capacity, 1, fhandle);
-        fread((char *)character_memory.buffer, character_memory.capacity, 1, fhandle);
+    utils_dyn_array_t program_memory;
+    utils_dyn_array_t character_memory;
+    if (!utils_dyn_array_init(&program_memory, header.prgrom_chunks * KB(16))){
+        assert(0&&"Out of memory!");
+    }
+    if (!utils_dyn_array_init(&character_memory, header.chrrom_chunks * KB(8))){
+        assert(0&&"Out of memory!");
     }
 
+    //  I need to fix this part
+    if (n_filetype == 1){
+        fread((char *)program_memory.buffer, program_memory.capacity, 1, fhandle);
+        program_memory.count = program_memory.capacity;
+        fread((char *)character_memory.buffer, character_memory.capacity, 1, fhandle);
+        character_memory.count = character_memory.capacity;
+    }
 
     if (n_filetype == 2)
     ;

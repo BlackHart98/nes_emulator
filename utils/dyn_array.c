@@ -5,19 +5,6 @@
 #include "utils.h"
 
 
-// I have to handle OOM!
-utils_dyn_array_t utils_dyn_array_init(size_t init_size){
-    uint8_t * buffer = (uint8_t *) malloc(init_size);
-    memset(buffer, 0, init_size);
-    // if (buffer == NULL)
-    return (utils_dyn_array_t){
-        .buffer = buffer,
-        .count = 0,
-        .capacity = init_size,
-    };
-}
-
-
 
 void utils_dyn_array_append(utils_dyn_array_t * dyn_array, uint8_t item){
     if ((dyn_array->count + 1) > dyn_array->capacity){
@@ -48,4 +35,19 @@ void utils_dyn_array_destroy(utils_dyn_array_t * dyn_array){
         dyn_array->buffer = NULL;
         dyn_array->capacity = 0;
     }
+}
+
+
+int utils_dyn_array_init(utils_dyn_array_t * dyn_array, size_t init_size){
+#if defined(DEBUG)
+    assert((init_size != 0)&&"array initializatio size should be > 0!")
+#endif
+    uint8_t * buffer = (uint8_t *) malloc(init_size);
+    if (buffer == NULL) return 0;
+    memset(buffer, 0, init_size);
+
+    dyn_array->buffer = buffer;
+    dyn_array->count = 0;
+    dyn_array->capacity = init_size;
+    return 1;
 }

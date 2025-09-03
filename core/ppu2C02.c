@@ -10,7 +10,7 @@ core_ppu_t core_ppu2C02_init(){
         .cycles = 0,
         .scanlines = 0,
         .clock_count = 0,
-        .clock_count = 0,
+        .n_chrbanks_id = 0,
     };
 }
 

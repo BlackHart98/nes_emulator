@@ -18,12 +18,15 @@ typedef struct _utils_array_view_t{
     size_t capacity;
 } utils_array_view_t;
 
-extern utils_dyn_array_t utils_dyn_array_init(size_t init_size);
+
 extern void utils_dyn_array_append(utils_dyn_array_t * dyn_array, uint8_t item);
 extern uint8_t utils_dyn_array_get_index(const utils_dyn_array_t * dyn_array, size_t index);
 extern void utils_dyn_array_set_index(utils_dyn_array_t * dyn_array, size_t index, uint8_t item);
 extern void utils_dyn_array_pop(utils_dyn_array_t * dyn_array);
 extern void utils_dyn_array_destroy(utils_dyn_array_t * dyn_array);
+
+
+extern int utils_dyn_array_init(utils_dyn_array_t * dyn_array, size_t init_size);
 
 
 

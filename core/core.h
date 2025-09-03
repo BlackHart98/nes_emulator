@@ -2,8 +2,8 @@
 
 #define LOOKUP_TABLE_SIZE  (16 * 16)
 
-#ifndef _CORE_H
-#define _CORE_H
+#ifndef CORE_H
+#define CORE_H
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -235,19 +235,14 @@ extern bool core_ppu2C02_clock(core_ppu_t *);
 // Cartridge glue functions
 extern void core_cartridge_map_prgrom_chunk(core_cartridge_t *, core_cpu_t *, core_program_rom_t *);
 extern void core_cartridge_map_chrrom_chunk(core_cartridge_t *, core_ppu_t *, core_pattern_t *);
-// Not quite sure about these functions below
-extern void core_cartridge_relay_prgrom_chunk(core_cartridge_t *, core_program_rom_t *);
-extern void core_cartridge_relay_chrrom_chunk(core_cartridge_t *, core_pattern_t *);
 
-// CPU-Cartridge glue functions
-// extern uint8_t core_cpu6502_read_from_main_bus(core_program_rom_t *, const uint16_t);
-// extern void core_cartridge_prgrom_write_to_main_bus(core_program_rom_t *, const uint16_t, const uint8_t);
-// extern uint8_t core_cartridge_pattern_read_from_ppu_bus(core_pattern_t *, const uint16_t);
-// extern void core_cartridge_pattern_write_to_ppu_bus(core_pattern_t *, const uint16_t, const uint8_t);
+// Not quite sure about these functions below
+// extern void core_cartridge_relay_prgrom_chunk(core_cartridge_t *, core_program_rom_t *);
+// extern void core_cartridge_relay_chrrom_chunk(core_cartridge_t *, core_pattern_t *);
 
 
 
 // NES Emulator
 extern int core_emulator_emulate(char * game_file_path);
 
-#endif /* _CORE_H */
+#endif /* CORE_H */
